@@ -15,8 +15,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.prefersmin.banitem.BanItem;
 import top.prefersmin.banitem.config.BanItemConfig;
 
-import java.util.Objects;
-
 /**
  * 容器接口Mixin
  *

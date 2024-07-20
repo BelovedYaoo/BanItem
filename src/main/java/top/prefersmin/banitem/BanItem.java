@@ -1,16 +1,8 @@
 package top.prefersmin.banitem;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.core.Registry;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
@@ -23,7 +15,6 @@ import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.network.NetworkConstants;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 import top.prefersmin.banitem.common.CommandRegister;
 import top.prefersmin.banitem.config.BanItemConfig;
@@ -49,7 +40,9 @@ public class BanItem {
 
     /**
      * 是否应该删除物品
+     *
      * @param stack 待检测的物品
+     *
      * @return 是否应该删除
      */
     public static boolean shouldDelete(ItemStack stack) {
@@ -64,6 +57,7 @@ public class BanItem {
 
     /**
      * 注册命令
+     *
      * @param event 事件
      */
     private void registerCommands(RegisterCommandsEvent event) {
@@ -72,6 +66,7 @@ public class BanItem {
 
     /**
      * 当物品进入世界时，比如玩家扔出物品时
+     *
      * @param event 事件
      */
     @SubscribeEvent
@@ -85,6 +80,7 @@ public class BanItem {
 
     /**
      * 当物品被玩家捡起时
+     *
      * @param event 事件
      */
     @SubscribeEvent
@@ -100,6 +96,7 @@ public class BanItem {
 
     /**
      * 当玩家打开容器时，比如背包和箱子
+     *
      * @param event 事件
      */
     @SubscribeEvent
