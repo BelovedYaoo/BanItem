@@ -1,0 +1,45 @@
+package top.prefersmin.banitem.mixin;
+
+import net.minecraft.core.NonNullList;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import top.prefersmin.banitem.BanItem;
+
+@Mixin(AbstractContainerMenu.class)
+public abstract class ContainerMixin {
+    @Shadow @Final public NonNullList<Slot> slots;
+
+    @Shadow public abstract NonNullList<ItemStack> getItems();
+
+    @Inject(at = @At(value = "HEAD"), method = "broadcastChanges")
+    public void onDetectAndSendChanges(CallbackInfo ci) {
+        for(int i = 0; i < this.slots.size(); ++i) {
+            if(BanItem.shouldDelete(this.getItems().get(i))) {
+                this.getItems().set(i, ItemStack.EMPTY);
+            }
+        }
+    }
+
+    @Inject(at = @At(value = "HEAD"), method = "removed")
+    public void onContainerClosed(Player playerIn, CallbackInfo ci) {
+        for(int i = 0; i < this.slots.size(); ++i) {
+            if(BanItem.shouldDelete(this.getItems().get(i))) {
+                this.getItems().set(i, ItemStack.EMPTY);
+            }
+        }
+        for(int i = 0; i < playerIn.getInventory().getContainerSize(); ++i) {
+            if(playerIn instanceof ServerPlayer && !playerIn.hasPermissions(playerIn.getServer().getOperatorUserPermissionLevel()) && BanItem.shouldDelete(playerIn.getInventory().getItem(i))) {
+                playerIn.getInventory().setItem(i, ItemStack.EMPTY);
+            }
+        }
+    }
+}
