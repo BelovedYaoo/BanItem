@@ -2,6 +2,8 @@ package top.prefersmin.banitem.config;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
 import com.electronwill.nightconfig.core.io.WritingMode;
+import com.mojang.brigadier.context.CommandContext;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
@@ -31,7 +33,7 @@ import static top.prefersmin.banitem.BanItem.shouldDelete;
  * Mod配置类
  *
  * @author PrefersMin
- * @version 1.0
+ * @version 1.1
  */
 @Mod.EventBusSubscriber(modid = BanItem.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class BanItemConfig {
@@ -41,14 +43,20 @@ public class BanItemConfig {
     public static ForgeConfigSpec.ConfigValue<List<String>> ITEM_BLACKLIST;
     private static final List<String> ITEM_BLACKLIST_DEFAULT = new ArrayList<>();
     private static final String ITEM_BLACKLIST_NAME = "itemBlacklist";
-    private static final String ITEM_BLACKLIST_COMMENT = "\n物品黑名单";
+    private static final String ITEM_BLACKLIST_COMMENT = "物品黑名单";
+
+    public static ForgeConfigSpec.ConfigValue<Boolean> ALLOW_OPERATOR_BYPASS;
+    private static final Boolean ALLOW_OPERATOR_BYPASS_DEFAULT = true;
+    private static final String ALLOW_OPERATOR_BYPASS_NAME = "allowOperatorBypass";
+    private static final String ALLOW_OPERATOR_BYPASS_COMMENT = "是否允许OP持有黑名单物品";
 
     public static final ForgeConfigSpec SPEC;
-    public static final Path path = FMLPaths.CONFIGDIR.get().resolve(BanItem.MODID + "-common.toml");
+    public static final Path PATH = FMLPaths.CONFIGDIR.get().resolve(BanItem.MODID + "-common.toml");
 
     static {
-        BUILDER.push("banitem");
+        BUILDER.push(BanItem.MODID);
         ITEM_BLACKLIST = BUILDER.comment(ITEM_BLACKLIST_COMMENT).define(ITEM_BLACKLIST_NAME, ITEM_BLACKLIST_DEFAULT);
+        ALLOW_OPERATOR_BYPASS = BUILDER.comment(ALLOW_OPERATOR_BYPASS_COMMENT).define(ALLOW_OPERATOR_BYPASS_NAME, ALLOW_OPERATOR_BYPASS_DEFAULT);
         BUILDER.pop();
         SPEC = BUILDER.build();
     }
@@ -72,32 +80,42 @@ public class BanItemConfig {
     public void reloadConfig() {
 
         // 创建并加载配置文件
-        CommentedFileConfig commentedFileConfig = CommentedFileConfig.builder(path).sync().autosave().writingMode(WritingMode.REPLACE).build();
+        CommentedFileConfig commentedFileConfig = CommentedFileConfig.builder(PATH).sync().autosave().writingMode(WritingMode.REPLACE).build();
         commentedFileConfig.load();
 
         // 设置新的配置文件
         SPEC.setConfig(commentedFileConfig);
-        new BanItemConfig().deleteBlacklistItemForWorld();
+        deleteBlacklistItemForWorld();
 
     }
 
+    /**
+     * 从世界中删除黑名单物品
+     */
     public void deleteBlacklistItemForWorld() {
-        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
 
-        // 注册表
+        // 获取注册表
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         RegistryAccess registryAccess = server.registryAccess();
+        // 从注册表获取维度类型注册表
         Registry<DimensionType> dimensionRegistry = registryAccess.registryOrThrow(Registries.DIMENSION_TYPE);
 
+        // 遍历所有维度
         dimensionRegistry.forEach((dimensionType) -> {
+            // 获取世界实体
             ServerLevel serverLevel = server.getLevel(ResourceKey.create(Registries.DIMENSION, dimensionType.effectsLocation()));
             if (serverLevel == null) {
                 return;
             }
+            // 遍历该世界内所有实体
             for (Entity entity : serverLevel.getAllEntities()) {
+                // 判断是否为物品实体
                 if (entity instanceof ItemEntity itemEntity) {
+                    // 判断是否黑名单物品
                     if (shouldDelete(itemEntity.getItem())) {
-                        LOGGER.info("BanItem：删除黑名单物品：" + itemEntity.getItem().getItem().getDescriptionId());
+                        // 通过kill删除物品
                         itemEntity.remove(Entity.RemovalReason.KILLED);
+                        LOGGER.info("BanItem：已删除黑名单物品[{}]", itemEntity.getItem().getItem().getDescriptionId());
                     }
                 }
             }

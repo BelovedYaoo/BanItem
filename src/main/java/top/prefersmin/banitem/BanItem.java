@@ -28,6 +28,9 @@ import org.slf4j.Logger;
 import top.prefersmin.banitem.common.CommandRegister;
 import top.prefersmin.banitem.config.BanItemConfig;
 
+/**
+ * @author PrefersMin
+ */
 @Mod(BanItem.MODID)
 public class BanItem {
 
@@ -44,6 +47,11 @@ public class BanItem {
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, BanItemConfig.SPEC);
     }
 
+    /**
+     * 是否应该删除物品
+     * @param stack 待检测的物品
+     * @return 是否应该删除
+     */
     public static boolean shouldDelete(ItemStack stack) {
         BanItemEvent event = new BanItemEvent(stack);
         MinecraftForge.EVENT_BUS.post(event);
@@ -62,6 +70,10 @@ public class BanItem {
         CommandRegister.register(event.getDispatcher());
     }
 
+    /**
+     * 当物品进入世界时，比如玩家扔出物品时
+     * @param event 事件
+     */
     @SubscribeEvent
     public void onEntityJoinWorld(EntityJoinLevelEvent event) {
         if (event.getEntity() instanceof ItemEntity) {
@@ -71,17 +83,25 @@ public class BanItem {
         }
     }
 
+    /**
+     * 当物品被玩家捡起时
+     * @param event 事件
+     */
     @SubscribeEvent
     public void onItemPickup(PlayerEvent.ItemPickupEvent event) {
         if (shouldDelete(event.getStack())) {
             if (event.isCancelable()) {
                 event.setCanceled(true);
             } else {
-                LOGGER.warn("BanItem：取消玩家拾取事件失败");
+                LOGGER.error("BanItem：玩家[{}]拾取了黑名单物品[{}]", event.getEntity(), event.getStack());
             }
         }
     }
 
+    /**
+     * 当玩家打开容器时，比如背包和箱子
+     * @param event 事件
+     */
     @SubscribeEvent
     public void onPlayerContainerOpen(PlayerContainerEvent event) {
         for (int i = 0; i < event.getContainer().slots.size(); ++i) {
